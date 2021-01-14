@@ -119,7 +119,7 @@ object MainForm: TMainForm
       Left = 344
       Height = 24
       Top = 4
-      Width = 24
+      Width = 28
       Alignment = taCenter
       AutoSize = False
       Font.Height = -13

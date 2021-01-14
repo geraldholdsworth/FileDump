@@ -17,17 +17,15 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="3"/>
+      <MinorVersionNr Value="1"/>
       <Language Value="0809"/>
-      <StringTable CompanyName="GJH Software" ProductName="File Dump" ProductVersion="3.00"/>
+      <StringTable CompanyName="GJH Software" ProductName="File Dump" ProductVersion="3.01"/>
     </VersionInfo>
     <BuildModes Count="6">
       <Item1 Name="Default" Default="True"/>
       <Item2 Name="Debug">
         <CompilerOptions>
           <Version Value="11"/>
-          <Target>
-            <Filename Value="FileDump"/>
-          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -64,9 +62,6 @@
       <Item3 Name="Release platform native">
         <CompilerOptions>
           <Version Value="11"/>
-          <Target>
-            <Filename Value="FileDump"/>
-          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -93,9 +88,6 @@
       <Item4 Name="Release MacOS 32bit">
         <CompilerOptions>
           <Version Value="11"/>
-          <Target>
-            <Filename Value="FileDump"/>
-          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -103,7 +95,7 @@
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <TargetCPU Value="i386"/>
-            <TargetOS Value="macos"/>
+            <TargetOS Value="darwin"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -124,9 +116,6 @@
       <Item5 Name="Release Win32">
         <CompilerOptions>
           <Version Value="11"/>
-          <Target>
-            <Filename Value="FileDump"/>
-          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -155,9 +144,6 @@
       <Item6 Name="Release Linux 32bit">
         <CompilerOptions>
           <Version Value="11"/>
-          <Target>
-            <Filename Value="FileDump"/>
-          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -215,9 +201,6 @@
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
-    <Target>
-      <Filename Value="FileDump"/>
-    </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -233,4 +216,17 @@
       </Options>
     </Linking>
   </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
 </CONFIG>
