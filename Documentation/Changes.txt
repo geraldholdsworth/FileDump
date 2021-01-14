@@ -1,2 +1,7 @@
 V3.00
 * Complete re-write and re-design from V2.15
+
+V3.01
+* Fixed a bug where the compared file is not positioned before reading a byte.
+* Adjusted some of the control sizes to fit the font of the other platforms.
+* Commented the source code.
