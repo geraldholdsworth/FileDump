@@ -5,3 +5,8 @@ V3.01
 * Fixed a bug where the compared file is not positioned before reading a byte.
 * Adjusted some of the control sizes to fit the font of the other platforms.
 * Commented the source code.
+
+V3.02
+* Prevented resizing below a certain height, which otherwise crashed the application.
+* Disabled the scroll bar when not in use, which would also crash the application.
+* Extra checks when populating the grid to make sure there is something to populate it with.
