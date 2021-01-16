@@ -23,7 +23,7 @@ appname='File Dump'
 #read appname
 echo $appname
 echo "Enter your application version"
-appversion='3.00'
+appversion='3.02'
 #read appversion
 echo $appversion
 #

@@ -115,9 +115,10 @@ begin
  edJump.Enabled:=False;
  btnSaveText.Enabled:=False;
  btnLoadCompare.Enabled:=False;
+  ScrollBar1.Enabled:=False;
  //Set up the form
  MainForm.Width:=635;
- Caption:=Application.Title+' v3.01 by Gerald J Holdsworth';
+ Caption:=Application.Title+' v3.02 by Gerald J Holdsworth';
 end;
 
 {                                                                              }
@@ -160,6 +161,7 @@ begin
   ScrollBar1.Max:=MainFile.Size;
   ScrollBar1.Min:=0;
   ScrollBar1.Position:=0;
+  ScrollBar1.Enabled:=True;
  end;
 end;
 
@@ -305,8 +307,10 @@ var
  buffer: array of Byte;
  chars : String;
 begin
+ if MainFilename='' then exit; //No file open, then leave
  //How many rows are visible on the form?
  rows:=(HexDumpDisplay.Height div HexDumpDisplay.DefaultRowHeight)-1;
+ if rows=0 then exit; //None, then leave
  //Get the XOR key
  key:=StrToIntDef('$'+edXOR.Text,0);
  //Will this take us beyond the end of the file?
@@ -331,7 +335,7 @@ begin
  //Setup the array for 16 bytes max
  SetLength(buffer,$10);
  //Make sure there are the appropriate number of rows
- HexDumpDisplay.RowCount:=rows+1; //+1 is the header
+ HexDumpDisplay.RowCount:=rows+1; //+1 is the header 
  //Start at line 0
  line:=0;
  repeat
@@ -499,6 +503,8 @@ procedure TMainForm.FormResize(Sender: TObject);
 var
  s,rows: Cardinal;
 begin
+ //And the height doesn't get too small
+ if MainForm.Height<290 then MainForm.Height:=290;
  //Have we got any rows displayed?
  if HexDumpDisplay.RowCount>1 then
  begin

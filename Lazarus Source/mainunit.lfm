@@ -219,6 +219,7 @@ object MainForm: TMainForm
       Width = 22
       Align = alClient
       BorderSpacing.Right = 8
+      Enabled = False
       Kind = sbVertical
       Max = 0
       PageSize = 0
