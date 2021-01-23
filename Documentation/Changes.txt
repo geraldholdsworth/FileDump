@@ -10,3 +10,10 @@ V3.02
 * Prevented resizing below a certain height, which otherwise crashed the application.
 * Disabled the scroll bar when not in use, which would also crash the application.
 * Extra checks when populating the grid to make sure there is something to populate it with.
+
+V3.03
+* Compare files was not working correctly. It was one byte ahead on the comparing file. This has been fixed.
+* The application would crash when a file could not be opened. This now does not crash but reports to the user the fact.
+* The files are opened non-exclusively (i.e. another application can open the file at the same time).
+* Files can now be dragged and dropped onto the application to open them, closing any previously opened file.
+* New button added to close the currently open file(s).
