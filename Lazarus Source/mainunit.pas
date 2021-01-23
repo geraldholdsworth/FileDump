@@ -34,7 +34,9 @@ type
   SaveFile: TSaveDialog;
   ScrollBar1: TScrollBar;
   btnLoadCompare: TSpeedButton;
+  btnCloseFile: TSpeedButton;
   StatusBar: TStatusBar;
+  procedure btnCloseFileClick(Sender: TObject);
   procedure btnLoadCompareClick(Sender: TObject);
   procedure btnMoveDownClick(Sender: TObject);
   procedure btnMoveDownLineClick(Sender: TObject);
@@ -43,7 +45,9 @@ type
   procedure btnMoveUpClick(Sender: TObject);
   procedure btnMoveUpLineClick(Sender: TObject);
   procedure btnOpenClick(Sender: TObject);
+  procedure LoadFile(filename: String);
   procedure edXORKeyPress(Sender: TObject; var Key: char);
+  procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
   procedure ScrollBar1Scroll(Sender: TObject; ScrollCode: TScrollCode;
    var ScrollPos: Integer);
   procedure WriteLine(F: TFileStream;line: String);
@@ -53,6 +57,7 @@ type
   procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
   procedure FormResize(Sender: TObject);
   procedure FormShow(Sender: TObject);
+  procedure ResetApplication;
   procedure HexDumpDisplayGetCellHint(Sender: TObject; ACol, ARow: Integer;
    var HintText: String);
   procedure HexDumpDisplayKeyPress(Sender: TObject; var Key: char);
@@ -92,33 +97,45 @@ begin
  //Set up the String Grid
  HexDumpDisplay.FixedCols:=1;
  HexDumpDisplay.FixedRows:=1;
- HexDumpDisplay.RowCount:=1;
+ HexDumpDisplay.RowCount :=1;
  //Header
- HexDumpDisplay.ColWidths[0]:=80;
- HexDumpDisplay.Cells[0,0]:='Address';
+ HexDumpDisplay.ColWidths[0] :=80;
+ HexDumpDisplay.Cells[0,0]   :='Address';
  HexDumpDisplay.ColWidths[17]:=120;
- HexDumpDisplay.Cells[17,0]:='ASCII';
+ HexDumpDisplay.Cells[17,0]  :='ASCII';
  for c:=1 to 16 do
  begin
   HexDumpDisplay.ColWidths[c]:=25;
-  HexDumpDisplay.Cells[c,0]:=IntToHex(c-1,2);
+  HexDumpDisplay.Cells[c,0]  :=IntToHex(c-1,2);
  end;
+ ResetApplication;
+ //Set up the form
+ MainForm.Width:=635;
+ Caption:=Application.Title+' v3.03 by Gerald J Holdsworth';
+end;
+
+{                                                                              }
+{ Reset the application                                                        }
+{                                                                              }
+procedure TMainForm.ResetApplication;
+begin
  //Reset the file's filename tracker
  MainFilename:='';
  //Disable the controls
- btnMoveUp.Enabled:=False;
- btnMoveDown.Enabled:=False;
- btnMoveUpLine.Enabled:=False;
+ btnMoveUp.Enabled      :=False;
+ btnMoveDown.Enabled    :=False;
+ btnMoveUpLine.Enabled  :=False;
  btnMoveDownLine.Enabled:=False;
- btnMoveToTop.Enabled:=False;
+ btnMoveToTop.Enabled   :=False;
  btnMoveToBottom.Enabled:=False;
- edJump.Enabled:=False;
- btnSaveText.Enabled:=False;
- btnLoadCompare.Enabled:=False;
-  ScrollBar1.Enabled:=False;
- //Set up the form
- MainForm.Width:=635;
- Caption:=Application.Title+' v3.02 by Gerald J Holdsworth';
+ edJump.Enabled         :=False;
+ edXOR.Enabled          :=False;
+ btnSaveText.Enabled    :=False;
+ btnCloseFile.Enabled   :=False;
+ btnLoadCompare.Enabled :=False;
+ ScrollBar1.Enabled     :=False;
+ //Empty the grid
+ HexDumpDisplay.RowCount:=1;
 end;
 
 {                                                                              }
@@ -128,41 +145,53 @@ procedure TMainForm.btnOpenClick(Sender: TObject);
 begin
  //Open the dialogue box
  if OpenFile.Execute then
+  LoadFile(OpenFile.FileName);
+end;
+
+{                                                                              }
+{ Load a file                                                                  }
+{                                                                              }
+procedure TMainForm.LoadFile(filename: String);
+begin
+ //If the files are already open, then close them
+ if MainFilename<>'' then MainFile.Free;
+ if CompareFilename<>'' then
  begin
-  //If the files are already open, then close them
-  if MainFilename<>'' then MainFile.Free;
-  if CompareFilename<>'' then
-  begin
-   CompareFile.Free;
-   //And reset the variables
-   CompareFilename:='';
-   StatusBar.Panels[2].Text:='';
-  end;
-  //Set the main file's filename
-  MainFilename:=OpenFile.Filename;
-  StatusBar.Panels[0].Text:=ExtractFileName(MainFilename);
+  CompareFile.Free;
+  //And reset the variables
+  CompareFilename:='';
+  StatusBar.Panels[2].Text:='';
+ end;
+ try
   //And open it, as in Read and Write mode
-  MainFile:=TFileStream.Create(MainFilename,fmOpenReadWrite);
+  MainFile:=TFileStream.Create(filename,fmOpenReadWrite OR fmShareDenyNone);
+  //Set the main file's filename
+  MainFilename:=filename;
+  StatusBar.Panels[0].Text:=ExtractFileName(MainFilename);
   //Display the size, in hex
   StatusBar.Panels[1].Text:=IntToHex(MainFile.Size,10);
-  //Populate the grid with the start of the file
-  DisplayHex(0);
   //Enable the controls
-  btnMoveUp.Enabled:=True;
-  btnMoveDown.Enabled:=True;
-  btnMoveUpLine.Enabled:=True;
+  btnMoveUp.Enabled      :=True;
+  btnMoveDown.Enabled    :=True;
+  btnMoveUpLine.Enabled  :=True;
   btnMoveDownLine.Enabled:=True;
-  btnMoveToTop.Enabled:=True;
+  btnMoveToTop.Enabled   :=True;
   btnMoveToBottom.Enabled:=True;
-  edJump.Enabled:=True;
-  btnSaveText.Enabled:=True;
-  btnLoadCompare.Enabled:=True;
+  edJump.Enabled         :=True;
+  edXOR.Enabled          :=True;
+  btnSaveText.Enabled    :=True;
+  btnCloseFile.Enabled   :=True;
+  btnLoadCompare.Enabled :=True;
   //Setup the scrollbar
   ScrollBar1.Max:=MainFile.Size;
   ScrollBar1.Min:=0;
   ScrollBar1.Position:=0;
   ScrollBar1.Enabled:=True;
+ except
+  ShowMessage('Could not open file "'+filename+'"');
  end;
+ //Populate the grid with the start of the file
+ DisplayHex(0);
 end;
 
 {                                                                              }
@@ -183,6 +212,15 @@ begin
  else //Ensure it is a number or A to F (i.e. Hex), or Delete/Backspace
   if not(Key in ['0'..'9']+['A'..'F']+['a'..'f'])
   and (Key<>chr(127)) AND (Key<>chr(8)) then Key:=#0; //If not, invalidate
+end;
+
+{                                                                              }
+{ User has dropped a file onto the window                                      }
+{                                                                              }
+procedure TMainForm.FormDropFiles(Sender: TObject;
+ const FileNames: array of String);
+begin
+ LoadFile(FileNames[0]);
 end;
 
 {                                                                              }
@@ -471,17 +509,37 @@ begin
  begin
   //Make sure we don't have a file already open
   if CompareFilename<>'' then CompareFile.Free;
-  //Update the tracking variable
-  CompareFilename:=OpenFile.Filename;
-  //And the status bar
-  StatusBar.Panels[2].Text:=ExtractFileName(CompareFilename);
-  //Open the file as Read Only
-  CompareFile:=TFileStream.Create(OpenFile.Filename,fmOpenRead);
-  //And position at the start (this is not actually required)
-  CompareFile.Position:=0;
+  try
+   //Open the file as Read Only
+   CompareFile:=TFileStream.Create(OpenFile.Filename,fmOpenRead OR fmShareDenyNone);
+   //And position at the start (this is not actually required)
+   CompareFile.Position:=0;
+   //Update the tracking variable
+   CompareFilename:=OpenFile.Filename;
+   //And the status bar
+   StatusBar.Panels[2].Text:=ExtractFileName(CompareFilename);
+   //Refresh the grid
+   HexDumpDisplay.Repaint;
+  except
+   ShowMessage('Could not open file "'+OpenFile.Filename+'"');
+  end;
   //Refresh the grid
   HexDumpDisplay.Repaint;
  end;
+end;
+
+{                                                                              }
+{ User is closing the file                                                     }
+{                                                                              }
+procedure TMainForm.btnCloseFileClick(Sender: TObject);
+begin
+ ResetApplication;
+ StatusBar.Panels[0].Text:='';
+ StatusBar.Panels[1].Text:='';
+ StatusBar.Panels[2].Text:='';
+ MainFile.Free;
+ if CompareFilename<>'' then CompareFile.Free;
+ CompareFilename:='';
 end;
 
 {                                                                              }
@@ -503,8 +561,6 @@ procedure TMainForm.FormResize(Sender: TObject);
 var
  s,rows: Cardinal;
 begin
- //And the height doesn't get too small
- if MainForm.Height<290 then MainForm.Height:=290;
  //Have we got any rows displayed?
  if HexDumpDisplay.RowCount>1 then
  begin
@@ -518,8 +574,6 @@ begin
    DisplayHex(s);
   end;
  end;
- //Make sure the width does not change
- if MainForm.Width<>635 then MainForm.Width:=635;
 end;
 
 {                                                                              }
@@ -578,10 +632,10 @@ begin
     pos:=StrToInt('$'+HexDumpDisplay.Cells[0,aRow])+aCol;
     //Start off with a match
     c:=s;
-    if pos<CompareFile.Size then
+    if pos-1<CompareFile.Size then
     begin
      //Move to position within the comparison file
-     CompareFile.Position:=pos;
+     CompareFile.Position:=pos-1;
      //And read the byte
      c:=CompareFile.ReadByte;
     end;

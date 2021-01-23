@@ -17,9 +17,9 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="3"/>
-      <MinorVersionNr Value="2"/>
+      <MinorVersionNr Value="3"/>
       <Language Value="0809"/>
-      <StringTable CompanyName="GJH Software" ProductName="File Dump" ProductVersion="3.02"/>
+      <StringTable CompanyName="GJH Software" ProductName="File Dump" ProductVersion="3.03"/>
     </VersionInfo>
     <BuildModes Count="6">
       <Item1 Name="Default" Default="True"/>
