@@ -14,7 +14,7 @@ uses
 
 begin
  RequireDerivedFormResource:=True;
-  Application.Title:='File Dump';
+ Application.Title:='File Dump';
  Application.Scaled:=True;
  Application.Initialize;
  Application.CreateForm(TMainForm, MainForm);

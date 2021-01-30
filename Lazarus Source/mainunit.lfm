@@ -147,6 +147,18 @@ object MainForm: TMainForm
       ImageIndex = 3
       OnClick = btnCloseFileClick
     end
+    object pbProgress: TProgressBar
+      Left = 416
+      Height = 28
+      Top = 0
+      Width = 215
+      Color = clBlue
+      ParentColor = False
+      Smooth = True
+      Step = 1
+      TabOrder = 2
+      Visible = False
+    end
   end
   object Panel2: TPanel
     Left = 603

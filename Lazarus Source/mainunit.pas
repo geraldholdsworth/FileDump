@@ -31,6 +31,7 @@ type
   Panel2: TPanel;
   btnMoveUp: TSpeedButton;
   btnSaveText: TSpeedButton;
+  pbProgress: TProgressBar;
   SaveFile: TSaveDialog;
   ScrollBar1: TScrollBar;
   btnLoadCompare: TSpeedButton;
@@ -111,7 +112,7 @@ begin
  ResetApplication;
  //Set up the form
  MainForm.Width:=635;
- Caption:=Application.Title+' v3.03 by Gerald J Holdsworth';
+ Caption:=Application.Title+' v3.04 by Gerald J Holdsworth';
 end;
 
 {                                                                              }
@@ -272,11 +273,15 @@ var
  buffer: array of Byte;
  p,len: Byte;
 begin
+ buffer:=nil;
  //Adapt the filename
  SaveFile.Filename:=MainFilename+'-dump.txt';
  //And open the dialogue box
  if SaveFile.Execute then
  begin
+  //Show the progress bar
+  pbProgress.Visible:=True;
+  pbProgress.Position:=0;
   //Create a new file (overwrite one if already exists)
   F:=TFileStream.Create(SaveFile.Filename,fmCreate);
   //Set to start of file
@@ -325,10 +330,15 @@ begin
     //Write out the complete line
     WriteLine(F,line);
    end;
+   //Update the progress bar
+   pbProgress.Position:=Round((MainFile.Position/MainFile.Size)*100);
+   Application.ProcessMessages;
    //Continue until no more data
   until MainFile.Position=MainFile.Size;
   //Close the file and exit
   F.Free;
+  //Hide the progress bar
+  pbProgress.Visible:=False;
  end;
 end;
 
@@ -345,6 +355,7 @@ var
  buffer: array of Byte;
  chars : String;
 begin
+ buffer:=nil;
  if MainFilename='' then exit; //No file open, then leave
  //How many rows are visible on the form?
  rows:=(HexDumpDisplay.Height div HexDumpDisplay.DefaultRowHeight)-1;
