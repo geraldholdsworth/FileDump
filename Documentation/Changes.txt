@@ -17,3 +17,6 @@ V3.03
 * The files are opened non-exclusively (i.e. another application can open the file at the same time).
 * Files can now be dragged and dropped onto the application to open them, closing any previously opened file.
 * New button added to close the currently open file(s).
+
+V3.04
+* Progress Bar added to show progress when saving file as a text file.
