@@ -20,3 +20,6 @@ V3.03
 
 V3.04
 * Progress Bar added to show progress when saving file as a text file.
+
+V3.05
+* Fixed a bug where the end of a file would not be displayed.

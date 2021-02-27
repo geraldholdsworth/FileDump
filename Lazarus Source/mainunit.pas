@@ -112,7 +112,7 @@ begin
  ResetApplication;
  //Set up the form
  MainForm.Width:=635;
- Caption:=Application.Title+' v3.04 by Gerald J Holdsworth';
+ Caption:=Application.Title+' v3.05 by Gerald J Holdsworth';
 end;
 
 {                                                                              }
@@ -367,7 +367,11 @@ begin
  begin
   //Then adjust accordingly
   if MainFile.Size-(rows*$10)>=0 then
-   start:=MainFile.Size-(rows*$10)
+  begin
+   start:=MainFile.Size-(rows*$10);
+   //start will be reset to a $10 boundary, so need to move it on if there is more
+   if start mod $10>0 then inc(start,$10);
+  end
   else
   begin //If the entire file is smaller than the space available, adjust
    start:=0;
