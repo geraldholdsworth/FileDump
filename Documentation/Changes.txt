@@ -23,3 +23,6 @@ V3.04
 
 V3.05
 * Fixed a bug where the end of a file would not be displayed.
+
+V3.06
+* New higher resolution application icon
