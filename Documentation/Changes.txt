@@ -26,3 +26,15 @@ V3.05
 
 V3.06
 * New higher resolution application icon
+
+V3.07
+* Bug still remained where the end of file wasn't being shown correctly.
+* Cell hints now work, and show the ASCII character (if a printable character) or control character name (<32 or =127) if no file is being compared. If a file is being compared, the hex number of the compared file is displayed instead.
+* Changed the background colour of the characters column.
+* Application also checks automatically to see if a file has changed, and refreshes.
+* Saving to a text file now opens the progress in a separate window with an Abort button.
+* Re-arranged the toolbar.
+* Added the ability to configure the colour scheme of the hex display.
+* Added a search window and moved the 'Jump To' field there. The open file can now be searched for a string or a sequence of hex numbers.
+* Can now scroll using the mouse wheel.
+* Added higher res images for the buttons and made the application High-DPI aware.

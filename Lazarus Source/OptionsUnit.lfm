@@ -1,0 +1,261 @@
+object OptionsForm: TOptionsForm
+  Left = 650
+  Height = 265
+  Top = 207
+  Width = 297
+  BorderIcons = []
+  BorderStyle = bsDialog
+  Caption = 'Options'
+  ClientHeight = 265
+  ClientWidth = 297
+  OnShow = FormShow
+  Position = poMainFormCenter
+  ShowHint = True
+  LCLVersion = '2.0.12.0'
+  object GroupBox1: TGroupBox
+    Left = 0
+    Height = 264
+    Top = 0
+    Width = 168
+    Caption = 'Hex number display colours'
+    ClientHeight = 245
+    ClientWidth = 158
+    TabOrder = 0
+    object lbZeroColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 8
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Zero'
+      Color = 15790320
+      Font.Color = clRed
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbDefaultColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 32
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Default'
+      Color = 15790320
+      Font.Color = clBlue
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbAltBGColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 152
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Alt Background'
+      Color = clCream
+      Font.Color = clBlue
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbASCIIColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 56
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Printable'
+      Color = 15790320
+      Font.Color = 43520
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbDiffColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 80
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Different Values'
+      Color = clYellow
+      Font.Color = clBlue
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbOverColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 104
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Beyond file'
+      Color = clAqua
+      Font.Color = clBlue
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbCellBGColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 128
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Background'
+      Color = 15790320
+      Font.Color = clBlue
+      Font.Name = 'Courier New'
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbHeaderColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 176
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Header'
+      Color = 16753991
+      Font.Color = clBlack
+      Font.Name = 'Courier New'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbCharColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 224
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Characters'
+      Color = 16749767
+      Font.Color = clBlack
+      Font.Name = 'Courier New'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+    object lbAddressColour: TLabel
+      Left = 0
+      Height = 16
+      Hint = 'Click to change'
+      Top = 200
+      Width = 152
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'Address'
+      Color = 16753991
+      Font.Color = clBlack
+      Font.Name = 'Courier New'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+      OnClick = lbZeroColourClick
+    end
+  end
+  object OKBtn: TBitBtn
+    Left = 176
+    Height = 30
+    Hint = 'Accept and save all changes'
+    Top = 232
+    Width = 112
+    Default = True
+    DefaultCaption = True
+    Kind = bkOK
+    ModalResult = 1
+    OnClick = OKBtnClick
+    TabOrder = 1
+  end
+  object CancelBtn: TBitBtn
+    Left = 176
+    Height = 30
+    Hint = 'Discard all changes'
+    Top = 192
+    Width = 112
+    Cancel = True
+    Caption = '&Cancel'
+    Kind = bkCancel
+    ModalResult = 2
+    TabOrder = 2
+  end
+  object ResetBtn: TBitBtn
+    Left = 176
+    Height = 30
+    Hint = 'Reset scheme to defaults'
+    Top = 153
+    Width = 112
+    Caption = '&Reset'
+    Kind = bkRetry
+    OnClick = ResetBtnClick
+    TabOrder = 3
+  end
+  object ColorDialog1: TColorDialog
+    Color = clBlack
+    CustomColors.Strings = (
+      'ColorA=000000'
+      'ColorB=000080'
+      'ColorC=008000'
+      'ColorD=008080'
+      'ColorE=800000'
+      'ColorF=800080'
+      'ColorG=808000'
+      'ColorH=808080'
+      'ColorI=C0C0C0'
+      'ColorJ=0000FF'
+      'ColorK=00FF00'
+      'ColorL=00FFFF'
+      'ColorM=FF0000'
+      'ColorN=FF00FF'
+      'ColorO=FFFF00'
+      'ColorP=FFFFFF'
+      'ColorQ=C0DCC0'
+      'ColorR=F0CAA6'
+      'ColorS=F0FBFF'
+      'ColorT=A4A0A0'
+    )
+    Left = 200
+    Top = 24
+  end
+end

@@ -6,7 +6,7 @@ interface
 
 uses
  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, Buttons,
- ExtCtrls, StdCtrls, ComCtrls;
+ ExtCtrls, StdCtrls, ComCtrls,Global, Types;
 
 type
 
@@ -18,25 +18,26 @@ type
   btnMoveDownLine: TSpeedButton;
   btnMoveToTop: TSpeedButton;
   btnMoveUpLine: TSpeedButton;
-  btnOpen: TSpeedButton;
-  edJump: TEdit;
   edXOR: TEdit;
   HexDumpDisplay: TStringGrid;
   ButtonImages: TImageList;
   NavImages: TImageList;
-  Label1: TLabel;
   Label2: TLabel;
   OpenFile: TOpenDialog;
-  Panel1: TPanel;
-  Panel2: TPanel;
+  EntryPanel: TPanel;
+  NavigationPanel: TPanel;
   btnMoveUp: TSpeedButton;
-  btnSaveText: TSpeedButton;
-  pbProgress: TProgressBar;
   SaveFile: TSaveDialog;
   ScrollBar1: TScrollBar;
-  btnLoadCompare: TSpeedButton;
-  btnCloseFile: TSpeedButton;
   StatusBar: TStatusBar;
+  FileModification: TTimer;
+  MainToolBar: TToolBar;
+  btnOpen: TToolButton;
+  btnCloseFile: TToolButton;
+  btnSaveText: TToolButton;
+  btnLoadCompare: TToolButton;
+  btnSearch: TToolButton;
+  btnOptions: TToolButton;
   procedure btnCloseFileClick(Sender: TObject);
   procedure btnLoadCompareClick(Sender: TObject);
   procedure btnMoveDownClick(Sender: TObject);
@@ -46,15 +47,19 @@ type
   procedure btnMoveUpClick(Sender: TObject);
   procedure btnMoveUpLineClick(Sender: TObject);
   procedure btnOpenClick(Sender: TObject);
+  procedure btnOptionsClick(Sender: TObject);
+  procedure btnSearchClick(Sender: TObject);
+  procedure FileModificationTimer(Sender: TObject);
+  procedure FormCreate(Sender: TObject);
+  procedure HexDumpDisplayMouseWheel(Sender: TObject; Shift: TShiftState;
+   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   procedure LoadFile(filename: String);
   procedure edXORKeyPress(Sender: TObject; var Key: char);
   procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
   procedure ScrollBar1Scroll(Sender: TObject; ScrollCode: TScrollCode;
    var ScrollPos: Integer);
-  procedure WriteLine(F: TFileStream;line: String);
   procedure btnSaveTextClick(Sender: TObject);
   procedure DisplayHex(start: Cardinal);
-  procedure edJumpKeyPress(Sender: TObject; var Key: char);
   procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
   procedure FormResize(Sender: TObject);
   procedure FormShow(Sender: TObject);
@@ -71,12 +76,43 @@ type
   procedure HexDumpDisplayValidateEntry(sender: TObject; aCol, aRow: Integer;
    const OldValue: string; var NewValue: String);
  private
+  //Last modified date of each file
+  MainFileDate,
+  CompareFileDate : Integer;
+ public
+  //Configurable colour scheme
+  ZeroColour,
+  DefaultColour,
+  FontColour,
+  ASCIIColour,
+  DiffColour,
+  OverColour,
+  HeaderColour,
+  AddressColour,
+  CharColour,
+  CellBGColour,
+  AltBGColour    : TColor;
+  //Filestreams for the two files
   MainFile,
   CompareFile     : TFileStream;
+  //Filenames for the two files
   MainFileName,
   CompareFileName : String;
- public
-
+  //Default colour scheme
+  const           // RRGGBB  display colours
+   dZeroColour    = $0000FF; //Red - FG colour for any zeros
+   dDefaultColour = $FF0000; //Blue - FG default colour for the cells
+   dFontColour    = $000000; //Black - FG default colour for other cells
+   dASCIIColour   = $00AA00; //Green - FG colour for printable values
+   dDiffColour    = $00FFFF; //Yellow - BG colour for different values
+   dOverColour    = $FFFF00; //Cyan - BG colour for different length files
+   dHeaderColour  = $FFA547; //BG Colour for the display header and address col
+   dAddressColour = $FFA547; //BG Colour for the address column;
+   dCharColour    = $FF94C7; //BG Colour for the character column
+   dCellBGColour  = $F0F0F0; //BG Colour for the cells
+   dAltBGColour   = $F0FBFF; //BG Colour for the alternate cells
+   //Application version
+   AppVersion    = '3.07';
  end;
 
 var
@@ -85,6 +121,8 @@ var
 implementation
 
 {$R *.lfm}
+
+uses SaveTextUnit,OptionsUnit,SearchUnit;
 
 { TMainForm }
 
@@ -96,23 +134,35 @@ var
  c: Integer;
 begin
  //Set up the String Grid
- HexDumpDisplay.FixedCols:=1;
- HexDumpDisplay.FixedRows:=1;
- HexDumpDisplay.RowCount :=1;
+ HexDumpDisplay.FixedCols     :=1;
+ HexDumpDisplay.FixedRows     :=1;
+ HexDumpDisplay.RowCount      :=1;
+ HexDumpDisplay.FixedColor    :=HeaderColour;
+ HexDumpDisplay.Color         :=CellBGColour;
+ HexDumpDisplay.AlternateColor:=AltBGColour;
+ HexDumpDisplay.Font.Size     :=Round(8*Monitor.PixelsPerInch/DesignTimePPI);
  //Header
- HexDumpDisplay.ColWidths[0] :=80;
- HexDumpDisplay.Cells[0,0]   :='Address';
- HexDumpDisplay.ColWidths[17]:=120;
- HexDumpDisplay.Cells[17,0]  :='ASCII';
+ HexDumpDisplay.ColWidths[0]  :=Round(80*Monitor.PixelsPerInch/DesignTimePPI);
+ HexDumpDisplay.Cells[0,0]    :='Address';
+ HexDumpDisplay.ColWidths[17] :=Round(120*Monitor.PixelsPerInch/DesignTimePPI);
+ HexDumpDisplay.Cells[17,0]   :='ASCII';
  for c:=1 to 16 do
  begin
-  HexDumpDisplay.ColWidths[c]:=25;
-  HexDumpDisplay.Cells[c,0]  :=IntToHex(c-1,2);
+  HexDumpDisplay.ColWidths[c] :=Round(25*Monitor.PixelsPerInch/DesignTimePPI);
+  HexDumpDisplay.Cells[c,0]   :=IntToHex(c-1,2);
  end;
  ResetApplication;
  //Set up the form
- MainForm.Width:=635;
- Caption:=Application.Title+' v3.05 by Gerald J Holdsworth';
+ MainForm.Width:=Round(635*Monitor.PixelsPerInch/DesignTimePPI);
+ MainForm.Constraints.MaxWidth:=Round(635*Monitor.PixelsPerInch/DesignTimePPI);
+ MainForm.Constraints.MinHeight:=Round(290*Monitor.PixelsPerInch/DesignTimePPI);
+ MainForm.Constraints.MinWidth:=Round(635*Monitor.PixelsPerInch/DesignTimePPI);
+ Caption:=Application.Title+' v'+AppVersion+' by Gerald J Holdsworth';
+ //Size the toolbar
+ MainToolBar.Height:=Round(32*Monitor.PixelsPerInch/DesignTimePPI);
+ MainToolBar.ButtonHeight:=MainToolBar.Height;
+ MainToolBar.ButtonWidth :=MainToolBar.Height;
+ MainToolBar.ImagesWidth :=MainToolBar.ButtonWidth;
 end;
 
 {                                                                              }
@@ -129,11 +179,11 @@ begin
  btnMoveDownLine.Enabled:=False;
  btnMoveToTop.Enabled   :=False;
  btnMoveToBottom.Enabled:=False;
- edJump.Enabled         :=False;
  edXOR.Enabled          :=False;
  btnSaveText.Enabled    :=False;
  btnCloseFile.Enabled   :=False;
  btnLoadCompare.Enabled :=False;
+ btnSearch.Enabled      :=False;
  ScrollBar1.Enabled     :=False;
  //Empty the grid
  HexDumpDisplay.RowCount:=1;
@@ -147,6 +197,102 @@ begin
  //Open the dialogue box
  if OpenFile.Execute then
   LoadFile(OpenFile.FileName);
+end;
+
+{                                                                              }
+{ Show the options unit                                                        }
+{                                                                              }
+procedure TMainForm.btnOptionsClick(Sender: TObject);
+begin
+ //Show the options form
+ OptionsForm.ShowModal;
+ //If user clicked on OK then update the display
+ if OptionsForm.ModalResult=mrOK then
+ begin
+  HexDumpDisplay.FixedColor    :=HeaderColour;
+  HexDumpDisplay.Color         :=CellBGColour;
+  HexDumpDisplay.AlternateColor:=AltBGColour;
+  //Save the configurable colour scheme to the registry
+  SetRegValI('ZeroColour'   ,ZeroColour);
+  SetRegValI('DefaultColour',DefaultColour);
+  SetRegValI('FontColour'   ,FontColour);
+  SetRegValI('ASCIIColour'  ,ASCIIColour);
+  SetRegValI('DiffColour'   ,DiffColour);
+  SetRegValI('OverColour'   ,OverColour);
+  SetRegValI('HeaderColour' ,HeaderColour);
+  SetRegValI('AddressColour',AddressColour);
+  SetRegValI('CharColour'   ,CharColour);
+  SetRegValI('CellBgColour' ,CellBGColour);
+  SetRegValI('AltBGColour'  ,AltBGColour);
+ end;
+end;
+
+{                                                                              }
+{ Open the search form                                                         }
+{                                                                              }
+procedure TMainForm.btnSearchClick(Sender: TObject);
+begin
+ SearchForm.Show;
+end;
+
+{                                                                              }
+{ Check to see if file has been modified                                       }
+{                                                                              }
+procedure TMainForm.FileModificationTimer(Sender: TObject);
+var
+ dorefresh: Boolean;
+ s        : Cardinal;
+begin
+ //Whether to check or not
+ dorefresh:=False;
+ //Check the main file
+ if MainFileName<>'' then
+  if MainFileDate<>FileAge(MainFileName)       then dorefresh:=True;
+ //Check the compared file
+ if CompareFileName<>'' then
+  if CompareFileDate<>FileAge(CompareFileName) then dorefresh:=True;
+ //Now refresh as one of the two files has changed
+ if dorefresh then
+ begin
+  //Get the current top position
+  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1]);
+  //Update the display
+  DisplayHex(s);
+ end;
+end;
+
+{                                                                              }
+{ Create the form                                                              }
+{                                                                              }
+procedure TMainForm.FormCreate(Sender: TObject);
+begin
+ //Retreive the configurable colour scheme from the registry, or use the defaults
+ ZeroColour   :=GetRegValI('ZeroColour'   ,dZeroColour);
+ DefaultColour:=GetRegValI('DefaultColour',dDefaultColour);
+ FontColour   :=GetRegValI('FontColour'   ,dFontColour);
+ ASCIIColour  :=GetRegValI('ASCIIColour'  ,dASCIIColour);
+ DiffColour   :=GetRegValI('DiffColour'   ,dDiffColour);
+ OverColour   :=GetRegValI('OverColour'   ,dOverColour);
+ HeaderColour :=GetRegValI('HeaderColour' ,dHeaderColour);
+ AddressColour:=GetRegValI('AddressColour',dAddressColour);
+ CharColour   :=GetRegValI('CharColour'   ,dCharColour);
+ CellBGColour :=GetRegValI('CellBgColour' ,dCellBGColour);
+ AltBGColour  :=GetRegValI('AltBGColour'  ,dAltBGColour);
+end;
+
+{                                                                              }
+{ User is scrolling using the mouse wheel                                      }
+{                                                                              }
+procedure TMainForm.HexDumpDisplayMouseWheel(Sender: TObject;
+ Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean
+ );
+begin
+ if MainFilename<>'' then
+ begin
+  if WheelDelta<0 then btnMoveDownLineClick(Sender);
+  if WheelDelta>0 then btnMoveUpLineClick(Sender);
+  Handled:=True;
+ end;
 end;
 
 {                                                                              }
@@ -178,16 +324,16 @@ begin
   btnMoveDownLine.Enabled:=True;
   btnMoveToTop.Enabled   :=True;
   btnMoveToBottom.Enabled:=True;
-  edJump.Enabled         :=True;
   edXOR.Enabled          :=True;
   btnSaveText.Enabled    :=True;
   btnCloseFile.Enabled   :=True;
   btnLoadCompare.Enabled :=True;
+  btnSearch.Enabled      :=True;
   //Setup the scrollbar
-  ScrollBar1.Max:=MainFile.Size;
-  ScrollBar1.Min:=0;
+  ScrollBar1.Max     :=MainFile.Size;
+  ScrollBar1.Min     :=0;
   ScrollBar1.Position:=0;
-  ScrollBar1.Enabled:=True;
+  ScrollBar1.Enabled :=True;
  except
   ShowMessage('Could not open file "'+filename+'"');
  end;
@@ -200,8 +346,7 @@ end;
 {                                                                              }
 procedure TMainForm.edXORKeyPress(Sender: TObject; var Key: char);
 begin
- //13 = CR...i.e. Enter key
- if Ord(Key)=13 then //Action the result
+ if SearchForm.KeyPressed(Key) then
  begin
   //Validate the entry
   edXOR.Text:=IntToHex(StrToIntDef('$'+edXOR.Text,0),2);
@@ -209,10 +354,7 @@ begin
   HexDumpDisplay.SetFocus;
   //Refresh the grid
   DisplayHex(StrToIntDef('$'+HexDumpDisplay.Cells[0,1],0));
- end
- else //Ensure it is a number or A to F (i.e. Hex), or Delete/Backspace
-  if not(Key in ['0'..'9']+['A'..'F']+['a'..'f'])
-  and (Key<>chr(127)) AND (Key<>chr(8)) then Key:=#0; //If not, invalidate
+ end;
 end;
 
 {                                                                              }
@@ -222,26 +364,6 @@ procedure TMainForm.FormDropFiles(Sender: TObject;
  const FileNames: array of String);
 begin
  LoadFile(FileNames[0]);
-end;
-
-{                                                                              }
-{ User has pressed a key on the Jump edit box                                  }
-{                                                                              }
-procedure TMainForm.edJumpKeyPress(Sender: TObject; var Key: char);
-begin
- //13 = CR...i.e. Enter key
- if Ord(Key)=13 then //Action the result
- begin
-  //Update the grid with a valid entry
-  DisplayHex(StrToIntDef('$'+edJump.Text,0));
-  //Update the edit box with a valid entry
-  edJump.Text:=IntToHex(StrToIntDef('$'+edJump.Text,0),10);
-  //Remove focus
-  HexDumpDisplay.SetFocus;
- end
- else //Ensure it is a number or A to F (i.e. Hex), or Delete/Backspace
-  if not(Key in ['0'..'9']+['A'..'F']+['a'..'f'])
-  and (Key<>chr(127)) AND (Key<>chr(8)) then Key:=#0; //If not, invalidate
 end;
 
 {                                                                              }
@@ -255,90 +377,19 @@ begin
 end;
 
 {                                                                              }
-{ Write a line of text to a text file                                          }
-{                                                                              }
-procedure TMainForm.WriteLine(F: TFileStream;line: String);
-begin
- line:=line+#$0D+#$0A; //Ensure CR/LF is added
- F.Write(line[1],Length(line)); //And write it out
-end;
-
-{                                                                              }
 { User has clicked on the Save As Text File button                             }
 {                                                                              }
 procedure TMainForm.btnSaveTextClick(Sender: TObject);
-var
- line: String;
- F: TFileStream;
- buffer: array of Byte;
- p,len: Byte;
 begin
- buffer:=nil;
  //Adapt the filename
  SaveFile.Filename:=MainFilename+'-dump.txt';
  //And open the dialogue box
  if SaveFile.Execute then
  begin
-  //Show the progress bar
-  pbProgress.Visible:=True;
-  pbProgress.Position:=0;
-  //Create a new file (overwrite one if already exists)
-  F:=TFileStream.Create(SaveFile.Filename,fmCreate);
-  //Set to start of file
-  F.Position:=0;
-  //Go to the position of the main file
-  MainFile.Position:=0;
-  //We will read in 16 bytes at a time
-  SetLength(buffer,$10);
-  //Write out the header
-  WriteLine(F,MainForm.Caption);
-  WriteLine(F,'https://www.geraldholdsworth.co.uk https://github.com/geraldholdsworth/FileDump');
-  WriteLine(F,'');
-  WriteLine(F,'Filename      : '+MainFilename);
-  WriteLine(F,'Total Filesize: '+IntToStr(MainFile.Size)
-                   +' (0x'+IntToHex(MainFile.Size,10)+') bytes');
-  WriteLine(F,'');
-  WriteLine(F,'Address     00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F  ASCII');
-  //Now the data
-  repeat
-   //Start the line off with the address, in hex, 10 digits long
-   line:=IntToHex((MainFile.Position div $10)*$10,10)+'  ';
-   //Set the amount of data to read to 16 bytes
-   len:=$10;
-   //If this will take us over the total size, then adjust accordingly
-   if MainFile.Position+len>MainFile.Size then
-    len:=MainFile.Size-MainFile.Position;
-   //If there is something to read, then read it
-   if len>0 then
-   begin
-    //Read into the buffer the data
-    MainFile.Read(buffer[0],len);
-    //Turn each byte into hex and output
-    for p:=0 to len-1 do
-    begin
-     line:=line+IntToHex(buffer[p],2)+' ';
-     if p=$07 then line:=line+' '; //Split in the middle
-    end;
-    //Extra space to separate from the characters
-    line:=line+' ';
-    //Now the characters
-    for p:=0 to len-1 do
-     if (buffer[p]>31) AND (buffer[p]<127) then
-      line:=line+chr(buffer[p]) //Printable
-     else
-      line:=line+'.'; //Not printable
-    //Write out the complete line
-    WriteLine(F,line);
-   end;
-   //Update the progress bar
-   pbProgress.Position:=Round((MainFile.Position/MainFile.Size)*100);
-   Application.ProcessMessages;
-   //Continue until no more data
-  until MainFile.Position=MainFile.Size;
-  //Close the file and exit
-  F.Free;
-  //Hide the progress bar
-  pbProgress.Visible:=False;
+  //Send the filename to the save text form
+  SaveTextForm.TxtFilename:=SaveFile.Filename;
+  //And show it, modally - this will do all the hard work
+  SaveTextForm.ShowModal;
  end;
 end;
 
@@ -357,6 +408,9 @@ var
 begin
  buffer:=nil;
  if MainFilename='' then exit; //No file open, then leave
+ //Update the last modified date/time
+ MainFileDate:=FileAge(MainFilename);
+ if CompareFilename<>'' then CompareFileDate:=FileAge(CompareFilename);
  //How many rows are visible on the form?
  rows:=(HexDumpDisplay.Height div HexDumpDisplay.DefaultRowHeight)-1;
  if rows=0 then exit; //None, then leave
@@ -400,23 +454,31 @@ begin
   //Clear the character column string
   chars:='';
   //Display the address in the first column - to 10 digits
-  HexDumpDisplay.Cells[0,line+1]:=IntToHex(start+line*$10,10);
+  if line+1<HexDumpDisplay.RowCount then
+   HexDumpDisplay.Cells[0,line+1]:=IntToHex(start+line*$10,10);
   //Go through the data just read in
   for ch:=0 to len-1 do
   begin
    //Display each one as hex - colours are dealt with elsewhere
-   HexDumpDisplay.Cells[ch+1,line+1]:=IntToHex(buffer[ch]XOR key,2);
+   if(ch+1<HexDumpDisplay.ColCount)and(line+1<HexDumpDisplay.RowCount)then
+    HexDumpDisplay.Cells[ch+1,line+1]:=IntToHex(buffer[ch]XOR key,2);
    //Add add to the character column
    if (buffer[ch]XOR key>31) AND (buffer[ch]XOR key<127) then
     chars:=chars+Chr(buffer[ch]XOR key) //Printable
    else
     chars:=chars+'.';                   //Not printable
   end;
+  //Are there more cells than data?
+  if len<$10 then
+   for ch:=len to $0F do
+    if(ch+1<HexDumpDisplay.ColCount)and(line+1<HexDumpDisplay.RowCount)then
+     HexDumpDisplay.Cells[ch+1,line+1]:=' ';
   //Display the characters in the final coluumn
-  HexDumpDisplay.Cells[17,line+1]:=chars;
+  if line+1<HexDumpDisplay.RowCount then
+   HexDumpDisplay.Cells[17,line+1]:=chars;
   //And move onto the next line
   inc(line);
- until (MainFile.Position=MainFile.Size) //Continue until the end of the file
+ until (MainFile.Position-$10>=MainFile.Size-1) //Continue until the end of the file
  or (line+1=HexDumpDisplay.Height div HexDumpDisplay.DefaultRowHeight); //Or form
 end;
 
@@ -598,10 +660,38 @@ procedure TMainForm.HexDumpDisplayGetCellHint(Sender: TObject; ACol,
  ARow: Integer; var HintText: String);
 var
  s: Byte;
+ p: Cardinal;
+const
+ codes: array[0..31] of String=('nul','soh','stx','etx','eot','enq','ack','bel',
+                                'bs' ,'ht' ,'lf' ,'vt' ,'ff' ,'cr' ,'so' ,'si' ,
+                                'dle','dc1','dc2','dc3','dc4','nak','syn','etb',
+                                'can','em' ,'sub','esc','fs' ,'gs' ,'rs' ,'us');
 begin
- s:=StrToIntDef('$'+HexDumpDisplay.Cells[aCol,aRow],0);
- if (s>31) and (s<127) then HintText:=chr(s)
- else HintText:='';
+ HintText:='';
+ if(aRow<1)then exit;
+ //Not comparing files, so just show the ASCII character
+ if CompareFilename='' then
+ begin
+  s:=StrToIntDef('$'+HexDumpDisplay.Cells[aCol,aRow],0);
+  //Printable
+  if(s>31)and(s<127)then HintText:=chr(s);
+  //Control codes
+  if s<32  then HintText:=UpperCase(codes[s]);
+  if s=127 then HintText:='DEL';
+ end
+ else //We are comparing files, so show the value of the compared file
+ begin
+  //Get the current position
+  p:=StrtoInt('$'+HexDumpDisplay.Cells[0,aRow])+aCol;
+  //Move to position within the comparison file
+  if p-1<CompareFile.Size then
+  begin
+   CompareFile.Position:=p-1;
+   //And read the byte
+   s:=CompareFile.ReadByte;
+   HintText:=IntToHex(s,2);
+  end;
+ end;
 end;
 
 {                                                                              }
@@ -624,7 +714,7 @@ var
  pos: Cardinal;
 begin
  //Default font colour is black, if everything else fails
- HexDumpDisplay.Font.Color:=$000000;
+ HexDumpDisplay.Font.Color:=FontColour;
  //We're only colouring below the header row
  if aRow>0 then
   //And the hex cells
@@ -633,11 +723,11 @@ begin
    //Get the value in the cell
    s:=StrToIntDef('$'+HexDumpDisplay.Cells[aCol,aRow],0);
    //Default font colour is Blue
-   HexDumpDisplay.Font.Color:=$FF0000;
+   HexDumpDisplay.Font.Color:=DefaultColour;
    //If it is zero, then it is Red
-   if s=0 then HexDumpDisplay.Font.Color:=$0000FF;
+   if s=0 then HexDumpDisplay.Font.Color:=ZeroColour;
    //If it is printable, then it is Green (darkish shade)
-   if (s>31) and (s<127) then HexDumpDisplay.Font.Color:=$00AA00;
+   if (s>31) and (s<127) then HexDumpDisplay.Font.Color:=ASCIIColour;
    //No styles are being applied
    HexDumpDisplay.Font.Style:=[];
    //We are also needing to recolour the background, if we are comparing
@@ -655,16 +745,17 @@ begin
      c:=CompareFile.ReadByte;
     end;
     //If they don't match, colour the background Yellow
-    if c<>s then HexDumpDisplay.Canvas.Brush.Color:=$00FFFF;
+    if c<>s then HexDumpDisplay.Canvas.Brush.Color:=DiffColour;
     //If we are beyond the end of the comparison file, colour the background Cyan
-    if pos>CompareFile.Size then HexDumpDisplay.Canvas.Brush.Color:=$FFFF00;
+    if pos>CompareFile.Size then HexDumpDisplay.Canvas.Brush.Color:=OverColour;
    end;
   end
   else
   begin
    //Colour the character column to match the header and address
    HexDumpDisplay.Font.Style:=[fsBold];
-   HexDumpDisplay.Canvas.Brush.Color:=HexDumpDisplay.FixedColor;
+   if aCol=0 then  HexDumpDisplay.Canvas.Brush.Color:=AddressColour;
+   if aCol=17 then HexDumpDisplay.Canvas.Brush.Color:=CharColour;
   end;
 end;
 
@@ -726,4 +817,3 @@ begin
 end;
 
 end.
-

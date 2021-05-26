@@ -1,0 +1,96 @@
+object SearchForm: TSearchForm
+  Left = 630
+  Height = 92
+  Top = 305
+  Width = 511
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'Search'
+  ClientHeight = 92
+  ClientWidth = 511
+  Position = poMainFormCenter
+  LCLVersion = '2.0.12.0'
+  object Label1: TLabel
+    Left = 8
+    Height = 16
+    Top = 8
+    Width = 55
+    Caption = 'Jump To:'
+    ParentColor = False
+  end
+  object edJump: TEdit
+    Left = 88
+    Height = 24
+    Top = 4
+    Width = 96
+    Alignment = taCenter
+    AutoSize = False
+    Font.Height = -13
+    Font.Name = 'Courier New'
+    MaxLength = 10
+    OnKeyPress = edJumpKeyPress
+    ParentFont = False
+    TabOrder = 0
+    Text = '0000000000'
+  end
+  object Label2: TLabel
+    Left = 8
+    Height = 16
+    Top = 36
+    Width = 56
+    Caption = 'Find text:'
+    ParentColor = False
+  end
+  object edTextFind: TEdit
+    Left = 88
+    Height = 24
+    Top = 32
+    Width = 416
+    AutoSize = False
+    Font.Height = -13
+    Font.Name = 'Courier New'
+    MaxLength = 255
+    OnKeyPress = edTextFindKeyPress
+    ParentFont = False
+    TabOrder = 1
+  end
+  object Label3: TLabel
+    Left = 8
+    Height = 16
+    Top = 64
+    Width = 64
+    Caption = 'Sequence:'
+    ParentColor = False
+  end
+  object edSequence: TEdit
+    Left = 88
+    Height = 24
+    Top = 60
+    Width = 416
+    AutoSize = False
+    Font.Height = -13
+    Font.Name = 'Courier New'
+    MaxLength = 255
+    OnKeyPress = edSequenceKeyPress
+    ParentFont = False
+    TabOrder = 2
+  end
+  object AbortBtn: TButton
+    Left = 429
+    Height = 25
+    Top = 3
+    Width = 75
+    Caption = 'Abort'
+    OnClick = AbortBtnClick
+    TabOrder = 3
+    Visible = False
+  end
+  object SearchProgress: TProgressBar
+    Left = 192
+    Height = 20
+    Top = 4
+    Width = 232
+    TabOrder = 4
+    Visible = False
+  end
+end

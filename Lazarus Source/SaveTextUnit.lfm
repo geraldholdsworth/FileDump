@@ -1,0 +1,42 @@
+object SaveTextForm: TSaveTextForm
+  Left = 304
+  Height = 61
+  Top = 113
+  Width = 320
+  BorderIcons = []
+  BorderStyle = bsDialog
+  Caption = 'Processing...'
+  ClientHeight = 61
+  ClientWidth = 320
+  OnShow = FormShow
+  Position = poMainFormCenter
+  LCLVersion = '2.0.12.0'
+  object pbProgress: TProgressBar
+    Left = 0
+    Height = 28
+    Top = 0
+    Width = 320
+    Color = clBlue
+    ParentColor = False
+    Smooth = True
+    Step = 1
+    TabOrder = 0
+  end
+  object AbortBtn: TButton
+    Left = 240
+    Height = 25
+    Top = 32
+    Width = 75
+    Cancel = True
+    Caption = 'Abort'
+    Enabled = False
+    OnClick = AbortBtnClick
+    TabOrder = 1
+  end
+  object Timer1: TTimer
+    Enabled = False
+    OnTimer = Timer1Timer
+    Left = 58
+    Top = 36
+  end
+end
