@@ -112,7 +112,7 @@ type
    dCellBGColour  = $F0F0F0; //BG Colour for the cells
    dAltBGColour   = $F0FBFF; //BG Colour for the alternate cells
    //Application version
-   AppVersion    = '3.07';
+   AppVersion    = '3.08';
  end;
 
 var
@@ -233,6 +233,7 @@ end;
 procedure TMainForm.btnSearchClick(Sender: TObject);
 begin
  SearchForm.Show;
+ SearchForm.Repaint;
 end;
 
 {                                                                              }
@@ -668,7 +669,7 @@ const
                                 'can','em' ,'sub','esc','fs' ,'gs' ,'rs' ,'us');
 begin
  HintText:='';
- if(aRow<1)then exit;
+ if(aRow<1)or(aCol<1)or(aCol>16)then exit;
  //Not comparing files, so just show the ASCII character
  if CompareFilename='' then
  begin

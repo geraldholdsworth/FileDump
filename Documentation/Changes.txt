@@ -38,3 +38,7 @@ V3.07
 * Added a search window and moved the 'Jump To' field there. The open file can now be searched for a string or a sequence of hex numbers.
 * Can now scroll using the mouse wheel.
 * Added higher res images for the buttons and made the application High-DPI aware.
+
+V3.08
+* Hints were getting shown for the first and last columns.
+* The search box was not getting repainted correctly on the second, and subsequent, openings.
