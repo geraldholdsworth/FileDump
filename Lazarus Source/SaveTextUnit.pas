@@ -6,7 +6,7 @@ interface
 
 uses
  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ComCtrls, StdCtrls,
- ExtCtrls;
+ ExtCtrls, StrUtils;
 
 type
 
@@ -23,7 +23,10 @@ type
  private
   Abort: Boolean;
  public
-  TxtFilename: String;
+  TxtFilename : String;
+  selectStart,
+  selectEnd   : QWord;
+  HideZeros   : Boolean;
  end;
 
 var
@@ -74,7 +77,7 @@ begin
  //Set to start of file
  F.Position:=0;
  //Go to the position of the main file
- MainForm.MainFile.Position:=0;
+ MainForm.MainFile.Position:=selectStart;
  //We will read in 16 bytes at a time
  SetLength(buffer,$10);
  //Write out the header
@@ -103,8 +106,8 @@ begin
   //Set the amount of data to read to 16 bytes
   len:=$10;
   //If this will take us over the total size, then adjust accordingly
-  if MainForm.MainFile.Position+len>MainForm.MainFile.Size then
-   len:=MainForm.MainFile.Size-MainForm.MainFile.Position;
+  if MainForm.MainFile.Position+len>selectEnd then
+   len:=selectEnd-MainForm.MainFile.Position;
   //If there is something to read, then read it
   if len>0 then
   begin
@@ -113,11 +116,13 @@ begin
    //Turn each byte into hex and output
    for p:=0 to len-1 do
    begin
-    line:=line+IntToHex(buffer[p],2)+' ';
+    if(buffer[p]<>0)or(not HideZeros)then line:=line+IntToHex(buffer[p],2)
+    else line:=line+'..';
+    line:=line+' ';
     if p=$07 then line:=line+' '; //Split in the middle
    end;
-   //Extra space to separate from the characters
-   line:=line+' ';
+   //Ensure the characters are at a set position
+   line:=PadRight(line,62);
    //Now the characters
    for p:=0 to len-1 do
     if (buffer[p]>31) AND (buffer[p]<127) then
@@ -128,10 +133,11 @@ begin
    WriteLine(F,line);
   end;
   //Update the progress bar
-  pbProgress.Position:=Round((MainForm.MainFile.Position/MainForm.MainFile.Size)*100);
+  pbProgress.Position:=Round(
+        ((MainForm.MainFile.Position-selectStart)/(selectEnd-selectStart))*100);
   Application.ProcessMessages;
   //Continue until no more data
- until(MainForm.MainFile.Position=MainForm.MainFile.Size)or(Abort);
+ until(MainForm.MainFile.Position>=selectEnd)or(Abort);
  //Close the file and exit
  F.Free;
  //Close the window

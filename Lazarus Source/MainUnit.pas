@@ -6,13 +6,15 @@ interface
 
 uses
  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, Buttons,
- ExtCtrls, StdCtrls, ComCtrls,Global, Types;
+ ExtCtrls, StdCtrls, ComCtrls, ActnList,Global, Types;
 
 type
 
  { TMainForm }
 
  TMainForm = class(TForm)
+  SearchShortCut: TAction;
+  ActionList1: TActionList;
   btnMoveDown: TSpeedButton;
   btnMoveToBottom: TSpeedButton;
   btnMoveDownLine: TSpeedButton;
@@ -38,8 +40,11 @@ type
   btnLoadCompare: TToolButton;
   btnSearch: TToolButton;
   btnOptions: TToolButton;
+  btnSaveDiff: TToolButton;
   procedure btnCloseFileClick(Sender: TObject);
   procedure btnLoadCompareClick(Sender: TObject);
+  procedure btnSaveDiffClick(Sender: TObject);
+  procedure LoadFileToCompare(filename: String);
   procedure btnMoveDownClick(Sender: TObject);
   procedure btnMoveDownLineClick(Sender: TObject);
   procedure btnMoveToBottomClick(Sender: TObject);
@@ -53,13 +58,13 @@ type
   procedure FormCreate(Sender: TObject);
   procedure HexDumpDisplayMouseWheel(Sender: TObject; Shift: TShiftState;
    WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-  procedure LoadFile(filename: String);
+  procedure LoadFile(filename: String;closeCompare : Boolean=True);
   procedure edXORKeyPress(Sender: TObject; var Key: char);
   procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
   procedure ScrollBar1Scroll(Sender: TObject; ScrollCode: TScrollCode;
    var ScrollPos: Integer);
   procedure btnSaveTextClick(Sender: TObject);
-  procedure DisplayHex(start: Cardinal);
+  procedure DisplayHex(start: QWord);
   procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
   procedure FormResize(Sender: TObject);
   procedure FormShow(Sender: TObject);
@@ -75,6 +80,7 @@ type
    const Value: string);
   procedure HexDumpDisplayValidateEntry(sender: TObject; aCol, aRow: Integer;
    const OldValue: string; var NewValue: String);
+  procedure SearchShortCutExecute(Sender: TObject);
  private
   //Last modified date of each file
   MainFileDate,
@@ -98,6 +104,9 @@ type
   //Filenames for the two files
   MainFileName,
   CompareFileName : String;
+  //Current platform and architecture (compile time directive)
+  TargetOS        : String;
+  TargetCPU       : String;
   //Default colour scheme
   const           // RRGGBB  display colours
    dZeroColour    = $0000FF; //Red - FG colour for any zeros
@@ -112,7 +121,7 @@ type
    dCellBGColour  = $F0F0F0; //BG Colour for the cells
    dAltBGColour   = $F0FBFF; //BG Colour for the alternate cells
    //Application version
-   AppVersion    = '3.08';
+   AppVersion    = '3.09';
  end;
 
 var
@@ -122,7 +131,7 @@ implementation
 
 {$R *.lfm}
 
-uses SaveTextUnit,OptionsUnit,SearchUnit;
+uses SaveTextUnit,OptionsUnit,SearchUnit,DifferenceUnit,SelectUnit;
 
 { TMainForm }
 
@@ -158,11 +167,22 @@ begin
  MainForm.Constraints.MinHeight:=Round(290*Monitor.PixelsPerInch/DesignTimePPI);
  MainForm.Constraints.MinWidth:=Round(635*Monitor.PixelsPerInch/DesignTimePPI);
  Caption:=Application.Title+' v'+AppVersion+' by Gerald J Holdsworth';
+ MainForm.Top:=0;
+ MainForm.Left:=Screen.Width-MainForm.Width;
+ MainForm.Height:=Screen.Height;
  //Size the toolbar
  MainToolBar.Height:=Round(32*Monitor.PixelsPerInch/DesignTimePPI);
  MainToolBar.ButtonHeight:=MainToolBar.Height;
  MainToolBar.ButtonWidth :=MainToolBar.Height;
  MainToolBar.ImagesWidth :=MainToolBar.ButtonWidth;
+ //Current platform and architecture (compile time directive)
+ TargetOS :={$I %FPCTARGETOS%};
+ TargetCPU:={$I %FPCTARGETCPU%};
+ //Keyboard shortcuts
+ If TargetOS<>'Darwin' then
+  SearchShortCut.ShortCut:=$4000 OR ord('F') //Ctrl+F (WindowsLinux)
+ else
+  SearchShortCut.ShortCut:=$1000 OR ord('F'); //Meta+F (Mac)
 end;
 
 {                                                                              }
@@ -181,12 +201,14 @@ begin
  btnMoveToBottom.Enabled:=False;
  edXOR.Enabled          :=False;
  btnSaveText.Enabled    :=False;
+ btnSaveDiff.Enabled    :=False;
  btnCloseFile.Enabled   :=False;
  btnLoadCompare.Enabled :=False;
  btnSearch.Enabled      :=False;
  ScrollBar1.Enabled     :=False;
  //Empty the grid
  HexDumpDisplay.RowCount:=1;
+ DifferenceForm.Hide;
 end;
 
 {                                                                              }
@@ -241,25 +263,35 @@ end;
 {                                                                              }
 procedure TMainForm.FileModificationTimer(Sender: TObject);
 var
- dorefresh: Boolean;
- s        : Cardinal;
+ dorefresh : Boolean;
+ s         : QWord;
 begin
  //Whether to check or not
  dorefresh:=False;
  //Check the main file
  if MainFileName<>'' then
-  if MainFileDate<>FileAge(MainFileName)       then dorefresh:=True;
- //Check the compared file
- if CompareFileName<>'' then
-  if CompareFileDate<>FileAge(CompareFileName) then dorefresh:=True;
- //Now refresh as one of the two files has changed
- if dorefresh then
- begin
-  //Get the current top position
-  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1]);
-  //Update the display
-  DisplayHex(s);
- end;
+  if FileExists(MainFileName) then //Does the file still exist?
+  begin
+   if MainFileDate<>FileAge(MainFileName)then dorefresh:=True;
+   //Check the compared file
+   if CompareFileName<>'' then
+    if FileExists(CompareFileName) then
+    begin
+     if CompareFileDate<>FileAge(CompareFileName)then dorefresh:=True;
+    end else btnLoadCompareClick(Sender); //File has been moved/deleted so close
+   //Now refresh as one of the two files has changed
+   if dorefresh then
+   begin
+    //Get the current top position
+    s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1]);
+    //Reload the file
+    LoadFile(MainFilename,False);
+    //Reload the comparison file too
+    if CompareFileName<>'' then LoadFileToCompare(CompareFileName);
+    //Update the display
+    DisplayHex(s);
+   end;
+  end else btnCloseFileClick(Sender); //File has been moved/deleted so close
 end;
 
 {                                                                              }
@@ -299,17 +331,19 @@ end;
 {                                                                              }
 { Load a file                                                                  }
 {                                                                              }
-procedure TMainForm.LoadFile(filename: String);
+procedure TMainForm.LoadFile(filename: String;closeCompare : Boolean=True);
 begin
  //If the files are already open, then close them
  if MainFilename<>'' then MainFile.Free;
- if CompareFilename<>'' then
- begin
-  CompareFile.Free;
-  //And reset the variables
-  CompareFilename:='';
-  StatusBar.Panels[2].Text:='';
- end;
+ if closeCompare then
+  if CompareFilename<>'' then
+  begin
+   CompareFile.Free;
+   //And reset the variables
+   CompareFilename:='';
+   btnSaveDiff.Enabled:=False;
+   StatusBar.Panels[2].Text:='';
+  end;
  try
   //And open it, as in Read and Write mode
   MainFile:=TFileStream.Create(filename,fmOpenReadWrite OR fmShareDenyNone);
@@ -361,10 +395,13 @@ end;
 {                                                                              }
 { User has dropped a file onto the window                                      }
 {                                                                              }
-procedure TMainForm.FormDropFiles(Sender: TObject;
- const FileNames: array of String);
+procedure TMainForm.FormDropFiles(Sender: TObject;const FileNames: array of String);
+var
+ currentShiftState: TShiftState;
 begin
- LoadFile(FileNames[0]);
+ currentShiftState:=GetKeyShiftState;
+ if ssShift in currentShiftState then LoadFileToCompare(FileNames[0])
+ else LoadFile(FileNames[0]);
 end;
 
 {                                                                              }
@@ -382,25 +419,50 @@ end;
 {                                                                              }
 procedure TMainForm.btnSaveTextClick(Sender: TObject);
 begin
- //Adapt the filename
- SaveFile.Filename:=MainFilename+'-dump.txt';
- //And open the dialogue box
- if SaveFile.Execute then
+ //Use selectStart to pass the current position
+ SelectForm.selectStart:=StrtoInt('$'+HexDumpDisplay.Cells[0,1]);
+ //Use selectEnd for the end of file
+ SelectForm.selectEnd  :=MainFile.Size;
+ //maxAddr is the very end of the file
+ SelectForm.maxAddr    :=MainFile.Size;
+ //Get the selection
+ SelectForm.ShowModal;
+ //Output the result
+ if SelectForm.ModalResult=mrOK then
  begin
-  //Send the filename to the save text form
-  SaveTextForm.TxtFilename:=SaveFile.Filename;
-  //And show it, modally - this will do all the hard work
-  SaveTextForm.ShowModal;
+  //Adapt the filename
+  SaveFile.Filename:=MainFilename+'-dump.txt';
+  //And open the dialogue box
+  if SaveFile.Execute then
+  begin
+   //Setup the limits
+   if SelectForm.OutputWhole.Checked then
+   begin //Output everything
+    SaveTextForm.selectStart:=0;
+    SaveTextForm.selectEnd  :=MainFile.Size;
+   end
+   else
+   begin //Output a selection
+    SaveTextForm.selectStart:=SelectForm.selectStart;
+    SaveTextForm.selectEnd  :=SelectForm.selectEnd;
+   end;
+   //Output zeros?
+   SaveTextForm.HideZeros:=SelectForm.cbHideZeros.Checked;
+   //Send the filename to the save text form
+   SaveTextForm.TxtFilename:=SaveFile.Filename;
+   //And show it, modally - this will do all the hard work
+   SaveTextForm.ShowModal;
+  end;
  end;
 end;
 
 {                                                                              }
 { Populates the grid, starting at address 'start'                              }
 {                                                                              }
-procedure TMainForm.DisplayHex(start: Cardinal);
+procedure TMainForm.DisplayHex(start: QWord);
 var
  rows,
- line  : Cardinal;
+ line  : QWord;
  ch,
  len,
  key   : Byte;
@@ -488,7 +550,7 @@ end;
 {                                                                              }
 procedure TMainForm.btnMoveUpClick(Sender: TObject);
 var
- s,rows: Cardinal;
+ s,rows: Int64;
 begin
  //Get the current top position
  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1])div$10;
@@ -505,7 +567,7 @@ end;
 {                                                                              }
 procedure TMainForm.btnMoveUpLineClick(Sender: TObject);
 var
- s: Cardinal;
+ s: QWord;
 begin
  //Get the current top position
  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1])div$10;
@@ -520,7 +582,7 @@ end;
 {                                                                              }
 procedure TMainForm.btnMoveDownClick(Sender: TObject);
 var
- s,rows: Cardinal;
+ s,rows: QWord;
 begin
  //Get the current top position
  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1])div$10;
@@ -537,7 +599,7 @@ end;
 {                                                                              }
 procedure TMainForm.btnMoveDownLineClick(Sender: TObject);
 var
- s: Cardinal;
+ s: QWord;
 begin
  //Get the current top position
  s:=StrtoInt('$'+HexDumpDisplay.Cells[0,1])div$10;
@@ -577,29 +639,50 @@ begin
   CompareFile.Free;
   //And update the tracking variables
   CompareFilename:='';
+  btnSaveDiff.Enabled:=False;
   StatusBar.Panels[2].Text:='';
+  DifferenceForm.Hide;
   //And refresh the grid
   HexDumpDisplay.Repaint;
  end
  else
  //Othewise, open the dialogue box
- if OpenFile.Execute then
+ if OpenFile.Execute then LoadFileToCompare(OpenFile.Filename);
+end;
+
+{                                                                              }
+{ Save the differences between two files                                       }
+{                                                                              }
+procedure TMainForm.btnSaveDiffClick(Sender: TObject);
+begin
+ if(MainFilename<>'')and(CompareFilename<>'')then
+  DifferenceForm.Show;
+end;
+
+{                                                                              }
+{ User is loading a file to compare                                            }
+{                                                                              }
+procedure TMainForm.LoadFileToCompare(filename: String);
+begin
+ if MainFilename<>'' then
  begin
   //Make sure we don't have a file already open
   if CompareFilename<>'' then CompareFile.Free;
   try
    //Open the file as Read Only
-   CompareFile:=TFileStream.Create(OpenFile.Filename,fmOpenRead OR fmShareDenyNone);
+   CompareFile:=TFileStream.Create(filename,fmOpenRead OR fmShareDenyNone);
    //And position at the start (this is not actually required)
    CompareFile.Position:=0;
    //Update the tracking variable
-   CompareFilename:=OpenFile.Filename;
+   CompareFilename:=filename;
    //And the status bar
    StatusBar.Panels[2].Text:=ExtractFileName(CompareFilename);
    //Refresh the grid
-   HexDumpDisplay.Repaint;
+   HexDumpDisplay.Repaint; 
+   //Enable the Save Differences button
+   btnSaveDiff.Enabled:=True;
   except
-   ShowMessage('Could not open file "'+OpenFile.Filename+'"');
+   ShowMessage('Could not open file "'+filename+'"');
   end;
   //Refresh the grid
   HexDumpDisplay.Repaint;
@@ -637,7 +720,7 @@ end;
 {                                                                              }
 procedure TMainForm.FormResize(Sender: TObject);
 var
- s,rows: Cardinal;
+ s,rows: QWord;
 begin
  //Have we got any rows displayed?
  if HexDumpDisplay.RowCount>1 then
@@ -661,38 +744,41 @@ procedure TMainForm.HexDumpDisplayGetCellHint(Sender: TObject; ACol,
  ARow: Integer; var HintText: String);
 var
  s: Byte;
- p: Cardinal;
+ p: QWord;
 const
  codes: array[0..31] of String=('nul','soh','stx','etx','eot','enq','ack','bel',
                                 'bs' ,'ht' ,'lf' ,'vt' ,'ff' ,'cr' ,'so' ,'si' ,
                                 'dle','dc1','dc2','dc3','dc4','nak','syn','etb',
                                 'can','em' ,'sub','esc','fs' ,'gs' ,'rs' ,'us');
 begin
- HintText:='';
- if(aRow<1)or(aCol<1)or(aCol>16)then exit;
- //Not comparing files, so just show the ASCII character
- if CompareFilename='' then
- begin
-  s:=StrToIntDef('$'+HexDumpDisplay.Cells[aCol,aRow],0);
-  //Printable
-  if(s>31)and(s<127)then HintText:=chr(s);
-  //Control codes
-  if s<32  then HintText:=UpperCase(codes[s]);
-  if s=127 then HintText:='DEL';
- end
- else //We are comparing files, so show the value of the compared file
- begin
-  //Get the current position
-  p:=StrtoInt('$'+HexDumpDisplay.Cells[0,aRow])+aCol;
-  //Move to position within the comparison file
-  if p-1<CompareFile.Size then
-  begin
-   CompareFile.Position:=p-1;
-   //And read the byte
-   s:=CompareFile.ReadByte;
-   HintText:=IntToHex(s,2);
-  end;
- end;
+// HintText:='';
+// StatusBar.Panels[3].Text:=IntToStr(aRow)+','+IntToStr(aCol);
+ if(aRow>0)and(aCol>0)and(aCol<17)then
+  if Length(HexDumpDisplay.Cells[aCol,aRow])=2 then
+  //Not comparing files, so just show the ASCII character
+   if CompareFilename='' then
+   begin
+    s:=StrToIntDef('$'+HexDumpDisplay.Cells[aCol,aRow],0);
+    //Printable
+    if(s>31)and(s<127)then HintText:=chr(s);
+    //Control codes
+    if s<32  then HintText:=UpperCase(codes[s]);
+    if s=127 then HintText:='DEL';
+   end
+   else //We are comparing files, so show the value of the compared file
+   begin
+    //Get the current position
+    p:=StrtoInt('$'+HexDumpDisplay.Cells[0,aRow])+aCol;
+    //Move to position within the comparison file
+    if p-1<CompareFile.Size then
+    begin
+     CompareFile.Position:=p-1;
+     //And read the byte
+     s:=CompareFile.ReadByte;
+     HintText:=IntToHex(s,2);
+    end;
+   end;
+ //StatusBar.Panels[3].Text:=HintText;
 end;
 
 {                                                                              }
@@ -712,7 +798,7 @@ procedure TMainForm.HexDumpDisplayPrepareCanvas(sender: TObject; aCol,
  aRow: Integer; aState: TGridDrawState);
 var
  s,c: Byte;
- pos: Cardinal;
+ pos: QWord;
 begin
  //Default font colour is black, if everything else fails
  HexDumpDisplay.Font.Color:=FontColour;
@@ -788,7 +874,7 @@ end;
 procedure TMainForm.HexDumpDisplayValidateEntry(sender: TObject; aCol,
  aRow: Integer; const OldValue: string; var NewValue: String);
 var
- p: Cardinal;
+ p: QWord;
  c: String;
 begin
  //We can only edit cells 1 to 16
@@ -815,6 +901,14 @@ begin
  end
  else //Otherwise, change back to what it was before
   NewValue:=OldValue;
+end;
+
+{                                                                              }
+{ Keyboard shortcut to open the search                                         }
+{                                                                              }
+procedure TMainForm.SearchShortCutExecute(Sender: TObject);
+begin
+ if MainFilename<>'' then btnSearchClick(Sender);
 end;
 
 end.

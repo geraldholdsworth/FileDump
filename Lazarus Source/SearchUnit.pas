@@ -24,6 +24,7 @@ type
   procedure edJumpKeyPress(Sender: TObject; var Key: char);
   procedure edSequenceKeyPress(Sender: TObject; var Key: char);
   procedure edTextFindKeyPress(Sender: TObject; var Key: char);
+  procedure FormShow(Sender: TObject);
   procedure SearchSeq(seq: array of Byte);
   function KeyPressed(var Key: Char): Boolean;
  private
@@ -147,6 +148,14 @@ begin
   //Return focus to our control
   edTextFind.SetFocus;
  end;
+end;
+
+{                                                                              }
+{ The form is showing                                                          }
+{                                                                              }
+procedure TSearchForm.FormShow(Sender: TObject);
+begin
+ edJump.SetFocus; //Ensure that the address search bar gains focus
 end;
 
 {                                                                              }

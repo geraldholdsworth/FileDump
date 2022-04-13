@@ -42,3 +42,14 @@ V3.07
 V3.08
 * Hints were getting shown for the first and last columns.
 * The search box was not getting repainted correctly on the second, and subsequent, openings.
+
+V3.09
+* Pressing SHIFT while dropping a file will open it to compare with the currently open file.
+* Application now opens on the right hand side of the screen and maximises the height.
+* Ctrl+F (or Cmd+F on macOS) opens the search window.
+* Extra button to list the differences between the two files.
+* Outputting a text file of the dump will ask the user for the range to output first.
+* If an open file is deleted, this is then closed in File Dump.
+* Better recognition of changes made to open files, externally from File Dump.
+* When outputting a text file, an option can be selected to replace any zeros with double dot, to make the listing easier to read.
+* The ASCII output on a text file is now aligned with the rows above, even when the hex finishes before 0x0F.
